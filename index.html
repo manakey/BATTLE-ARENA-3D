@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>BATTLE ARENA 3D - Fortnite風アクションゲーム</title>
+<style>
+  html, body {
+    margin: 0; padding: 0; overflow: hidden;
+    background: #000; font-family: 'Segoe UI', Arial, sans-serif;
+    -webkit-user-select: none; user-select: none;
+  }
+  canvas { display: block; }
+
+  #crosshair {
+    position: fixed; top: 50%; left: 50%;
+    width: 22px; height: 22px; transform: translate(-50%, -50%);
+    pointer-events: none; z-index: 10;
+  }
+  #crosshair::before, #crosshair::after {
+    content: ''; position: absolute; background: #fff;
+    box-shadow: 0 0 2px #000;
+  }
+  #crosshair::before { left: 10px; top: 0; width: 2px; height: 22px; }
+  #crosshair::after { top: 10px; left: 0; width: 22px; height: 2px; }
+
+  #hud {
+    position: fixed; inset: 0; pointer-events: none; z-index: 5;
+    color: #fff; text-shadow: 0 1px 3px #000;
+  }
+  #topbar {
+    position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+    font-size: 22px; font-weight: bold; letter-spacing: 2px;
+    background: rgba(0,0,0,0.35); padding: 6px 18px; border-radius: 8px;
+  }
+  #stormWarn {
+    position: absolute; top: 56px; left: 50%; transform: translateX(-50%);
+    font-size: 14px; color: #7cf; background: rgba(0,0,0,0.35);
+    padding: 3px 12px; border-radius: 6px;
+  }
+  #bottomleft {
+    position: absolute; bottom: 18px; left: 18px;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .bar-wrap { width: 220px; }
+  .bar-label { font-size: 12px; margin-bottom: 2px; }
+  .bar-bg { width: 100%; height: 16px; background: rgba(0,0,0,0.5); border-radius: 4px; overflow: hidden; border: 1px solid rgba(255,255,255,0.3); }
+  .bar-fill { height: 100%; transition: width 0.15s; }
+  #hpFill { background: linear-gradient(90deg,#3ddc3d,#1e8f1e); }
+  #shieldFill { background: linear-gradient(90deg,#3daaff,#1560c9); }
+
+  #bottomright {
+    position: absolute; bottom: 18px; right: 18px; text-align: right;
+  }
+  #ammo { font-size: 30px; font-weight: bold; }
+  #weaponName { font-size: 14px; opacity: 0.85; }
+  #matBar { font-size: 14px; margin-top: 8px; background: rgba(0,0,0,0.35); padding: 4px 10px; border-radius: 6px;}
+
+  #buildBar {
+    position: absolute; bottom: 100px; left: 50%; transform: translateX(-50%);
+    display: flex; gap: 8px;
+  }
+  .buildIcon {
+    width: 46px; height: 46px; border: 2px solid rgba(255,255,255,0.4);
+    border-radius: 6px; background: rgba(0,0,0,0.45);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+  }
+  .buildIcon.active { border-color: #ffd23d; box-shadow: 0 0 8px #ffd23d; }
+
+  #killfeed {
+    position: absolute; top: 90px; right: 18px; text-align: right;
+    font-size: 13px; display: flex; flex-direction: column; gap: 3px;
+  }
+  .killmsg { background: rgba(0,0,0,0.4); padding: 2px 8px; border-radius: 4px; }
+
+  #centerMsg {
+    position: absolute; top: 40%; left: 50%; transform: translate(-50%,-50%);
+    font-size: 40px; font-weight: bold; text-align: center; display: none;
+  }
+
+  #startScreen, #deathScreen {
+    position: fixed; inset: 0; background: radial-gradient(circle at center, #1b2a3d, #05070a 80%);
+    color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    z-index: 100; text-align: center; padding: 20px; box-sizing: border-box;
+  }
+  #startScreen h1 { font-size: 48px; margin-bottom: 4px; letter-spacing: 3px; color: #ffd23d; text-shadow: 0 2px 10px rgba(255,210,61,0.5);}
+  #startScreen p { max-width: 520px; line-height: 1.6; font-size: 14px; opacity: 0.85; }
+  .bigBtn {
+    margin-top: 24px; padding: 14px 40px; font-size: 20px; font-weight: bold;
+    background: linear-gradient(180deg,#ffd23d,#e0a800); border: none; border-radius: 8px;
+    color: #1b1b1b; cursor: pointer; box-shadow: 0 4px 0 #a87400;
+  }
+  .bigBtn:active { transform: translateY(3px); box-shadow: 0 1px 0 #a87400; }
+  #deathScreen { display: none; }
+  #deathScreen h1 { font-size: 46px; color: #ff5050; }
+
+  .keyRow { display:flex; gap:16px; margin-top: 18px; font-size: 12px; flex-wrap: wrap; justify-content: center; max-width: 600px;}
+  .keyChip { background: rgba(255,255,255,0.08); padding: 6px 10px; border-radius: 6px; }
+  kbd { background:#333; padding:1px 6px; border-radius:3px; border:1px solid #555; }
+
+  #loading { position:fixed; inset:0; background:#05070a; color:#ffd23d; display:flex; align-items:center; justify-content:center; font-size:20px; z-index:200;}
+</style>
+</head>
+<body>
+
+<div id="loading">読み込み中...</div>
+
+<div id="startScreen" style="display:none;">
+  <h1>⚡ BATTLE ARENA 3D</h1>
+  <p>Fortnite風の3Dアクションゲームです。マップに散らばる武器を拾い、資材を集めて壁や床を建築しながら、CPU相手に勝ち残りを目指しましょう。ストームの外にいるとダメージを受けます。</p>
+  <div class="keyRow">
+    <div class="keyChip"><kbd>W A S D</kbd> 移動</div>
+    <div class="keyChip"><kbd>Space</kbd> ジャンプ</div>
+    <div class="keyChip">マウス移動 視点</div>
+    <div class="keyChip">左クリック 射撃</div>
+    <div class="keyChip">右クリック 建築設置</div>
+    <div class="keyChip"><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> 建築切替(壁/床/階段)</div>
+    <div class="keyChip"><kbd>Shift</kbd> ダッシュ</div>
+    <div class="keyChip"><kbd>R</kbd> リロード</div>
+    <div class="keyChip"><kbd>Esc</kbd> ポーズ/マウス解除</div>
+  </div>
+  <button class="bigBtn" id="startBtn">試合開始</button>
+</div>
+
+<div id="deathScreen">
+  <h1 id="deathTitle">戦闘不能...</h1>
+  <p id="deathStats"></p>
+  <button class="bigBtn" id="restartBtn">もう一度プレイ</button>
+</div>
+
+<div id="crosshair"></div>
+
+<div id="hud">
+  <div id="topbar">生存: <span id="aliveCount">10</span> / キル: <span id="killCount">0</span></div>
+  <div id="stormWarn"></div>
+  <div id="bottomleft">
+    <div class="bar-wrap">
+      <div class="bar-label">SHIELD</div>
+      <div class="bar-bg"><div class="bar-fill" id="shieldFill" style="width:0%"></div></div>
+    </div>
+    <div class="bar-wrap">
+      <div class="bar-label">HP</div>
+      <div class="bar-bg"><div class="bar-fill" id="hpFill" style="width:100%"></div></div>
+    </div>
+  </div>
+  <div id="buildBar">
+    <div class="buildIcon active" data-b="wall">🧱</div>
+    <div class="buildIcon" data-b="floor">▬</div>
+    <div class="buildIcon" data-b="stair">🪜</div>
+  </div>
+  <div id="bottomright">
+    <div id="ammo">30 / 90</div>
+    <div id="weaponName">アサルトライフル</div>
+    <div id="matBar">🪵 資材: <span id="matCount">100</span></div>
+  </div>
+  <div id="killfeed"></div>
+  <div id="centerMsg"></div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="main.js"></script>
+</body>
+</html>

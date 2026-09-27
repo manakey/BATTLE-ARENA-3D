@@ -1,0 +1,15 @@
+{
+  "name": "fortnite-like-3d",
+  "version": "1.0.0",
+  "description": "Simple browser-based 3D battle royale-lite action game (Fortnite-inspired), built with Three.js and Express.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}
