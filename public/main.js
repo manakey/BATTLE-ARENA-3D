@@ -213,10 +213,19 @@ function spawnPickups(n) {
 function makeBotMesh(color) {
   const group = new THREE.Group();
   const bodyMat = new THREE.MeshStandardMaterial({ color });
-  const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.5, 1.2, 4, 8), bodyMat);
+  // r128にはCapsuleGeometryが無いので、円柱+球で代用
+  const body = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 1.2, 10), bodyMat);
   body.position.y = 1.1;
   body.castShadow = true;
   group.add(body);
+  const legs = new THREE.Mesh(new THREE.SphereGeometry(0.5, 10, 8), bodyMat);
+  legs.position.y = 0.5;
+  legs.castShadow = true;
+  group.add(legs);
+  const chest = new THREE.Mesh(new THREE.SphereGeometry(0.5, 10, 8), bodyMat);
+  chest.position.y = 1.7;
+  chest.castShadow = true;
+  group.add(chest);
   const head = new THREE.Mesh(new THREE.SphereGeometry(0.4, 8, 8), bodyMat);
   head.position.y = 2.0;
   head.castShadow = true;
@@ -742,7 +751,16 @@ document.addEventListener('keydown', e => {
 // 起動
 // ==========================================================
 window.addEventListener('load', () => {
-  init();
-  $('loading').style.display = 'none';
-  $('startScreen').style.display = 'flex';
+  if (typeof THREE === 'undefined') {
+    $('loading').textContent = 'Three.jsの読み込みに失敗しました。ネットワークを確認してリロードしてください。';
+    return;
+  }
+  try {
+    init();
+    $('loading').style.display = 'none';
+    $('startScreen').style.display = 'flex';
+  } catch (err) {
+    console.error(err);
+    $('loading').textContent = '初期化エラー: ' + err.message;
+  }
 });
